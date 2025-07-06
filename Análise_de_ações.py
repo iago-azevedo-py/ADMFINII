@@ -24,7 +24,7 @@ import google.generativeai as genai
 
 # Configuração da página (DEVE ESTAR NO TOPO)
 st.set_page_config(
-    page_title="Oráculo de Análise de Ações",
+    page_title="Assistente para Análise Conservadora de Ações",
     page_icon="📈",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -501,7 +501,7 @@ async def chat_consultor_conservador(pergunta, dados_contexto, noticias, session
 
     chat_agent = Agent(
         name="consultor_conservador",
-        model="gemini-2.5-pro",
+        model="gemini-2.5-flash",
         instruction=f"""
         Você é um CONSULTOR FINANCEIRO EXPERIENTE e DIRECIONADOR, especializado em orientar investidores conservadores.
         Responda sempre em português do Brasil, de forma educativa, prática e orientativa.
@@ -554,15 +554,157 @@ async def chat_consultor_conservador(pergunta, dados_contexto, noticias, session
 def main():
     global GOOGLE_API_KEY
 
-    st.title("📈 Oráculo de Análise Conservadora de Ações")
+    st.title("📈 Assistente para Análise Conservadora de Ações")
     st.markdown("Consultoria especializada para investidores conservadores com análise de notícias em tempo real")
     st.markdown("---")
     
-    # Inicializar serviço de sessão para o agente (ADICIONAR ESTA LINHA)
+    # Inicializar serviço de sessão para o agente
     session_service = initialize_session_service()
     
     # Inicializar perfil do investidor
     inicializar_perfil_investidor()
+    
+    # NOVA PÁGINA INICIAL - EXPLICAÇÃO DO PROJETO
+    if not st.session_state.get("mostrar_ferramenta", False):
+        st.markdown("""
+        # 🎯 Como Funciona Este Assistente?
+        
+        ### 🤔 **O que faz este sistema?**
+        Este assistente foi criado para **ajudar investidores conservadores** a analisar ações de empresas americanas de forma simples e inteligente. 
+        
+        Ele coleta informações financeiras, notícias e gera análises personalizadas - como ter um consultor financeiro particular!
+        
+        ---
+        
+        ### 🔧 **Como foi construído?**
+        
+        **🤖 Inteligência Artificial (IA)**
+        - Usa o **Google Gemini** (a IA do Google) para entender suas perguntas e dar respostas personalizadas
+        - É como conversar com um especialista em investimentos!
+        
+        **📊 Dados Financeiros**
+        - Conecta com **APIs** (fontes de dados na internet) para buscar:
+          - Balanços patrimoniais das empresas
+          - Demonstrativos de resultados
+          - Fluxo de caixa
+          - Histórico de preços
+        
+        **📰 Notícias em Tempo Real**
+        - Busca notícias atualizadas sobre a empresa e o setor
+        - Inclui essas informações nas análises
+        
+        **🔍 Pesquisas no Google**
+        - Pode buscar informações adicionais na internet
+        - Traz contexto mais amplo sobre a empresa
+        
+        ---
+        
+        ### 📚 **De onde vêm os dados?**
+        
+        | Fonte | O que traz |
+        |-------|------------|
+        | 🏦 **Financial Modeling Prep** | Dados financeiros oficiais das empresas |
+        | 📰 **GNews** | Notícias recentes sobre empresas e setores |
+        | 🔍 **SerpAPI** | Resultados de pesquisa do Google |
+        | 🤖 **Google Gemini** | Análises inteligentes e conversas |
+        | 📈 **Yahoo Finance** | Dados complementares de ações |
+        
+        ---
+        
+        ### 🎯 **Para quem é este assistente?**
+        
+        **✅ Ideal para:**
+        - Investidores conservadores (que preferem segurança)
+        - Pessoas que querem aprender sobre análise de ações
+        - Quem busca informações organizadas em um só lugar
+        - Investidores que gostam de dividendos e empresas estáveis
+        
+        **❌ Não é para:**
+        - Day traders ou especuladores
+        - Quem busca "dicas quentes" de investimento
+        - Pessoas que querem garantias de lucro
+        
+        ---
+        
+        ### 🛡️ **É seguro usar?**
+        
+        **✅ Sim, porque:**
+        - Suas chaves de API ficam apenas no seu navegador
+        - Não salvamos nem compartilhamos suas informações
+        - O código é transparente e pode ser verificado
+        - Todas as análises são apenas educativas
+        
+        **⚠️ Importante lembrar:**
+        - Este sistema **NÃO dá conselhos de investimento**
+        - É apenas uma ferramenta educativa
+        - Sempre consulte um profissional qualificado
+        - Faça sua própria pesquisa antes de investir
+        
+        ---
+        
+        ### 🚀 **Como começar?**
+        
+        1. **Configure suas chaves de API** na barra lateral (←)
+        2. **Digite um ticker** de uma empresa (ex: AAPL, MSFT, TSLA)
+        3. **Clique em "Analisar"** para ver os dados
+        4. **Use o chat** para fazer perguntas específicas
+        
+        *As chaves de API são gratuitas, mas têm limites de uso. Links para criar suas chaves estão na barra lateral.*
+        
+        ---
+        
+        ### 💡 **Exemplo prático:**
+        
+        **Você pode perguntar:**
+        - *"A Apple é uma boa empresa para investidor conservador?"*
+        - *"Quanto a Microsoft paga de dividendos?"*
+        - *"Qual o nível de endividamento da Tesla?"*
+        - *"Como está a situação financeira da empresa?"*
+        
+        **O assistente vai:**
+        - Analisar os dados financeiros
+        - Verificar notícias recentes
+        - Dar uma resposta personalizada para seu perfil conservador
+        - Explicar conceitos financeiros de forma simples
+        
+        ---
+        """)
+        
+        # Seção de início
+        st.markdown("### 🎯 **Pronto para começar?**")
+        
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(
+                "🚀 Começar a Usar o Assistente", 
+                type="primary", 
+                use_container_width=True,
+                help="Clique para acessar a ferramenta de análise"
+            ):
+                st.session_state.mostrar_ferramenta = True
+                st.rerun()
+        
+        # Rodapé da página inicial
+        st.markdown("---")
+        st.markdown("""
+        ### 📞 **Precisa de ajuda?**
+        
+        Se você é novo em investimentos, recomendamos:
+        - Estudar sobre **análise fundamentalista**
+        - Entender o que são **dividendos** e **P/L**
+        - Procurar cursos sobre **investimento conservador**
+        - Consultar um **consultor financeiro qualificado**
+        
+        **Lembre-se:** Este é um assistente educativo, não um consultor financeiro!
+        """)
+        
+        return  # Para aqui, não mostra o resto da ferramenta
+    
+    # BOTÃO PARA VOLTAR À EXPLICAÇÃO
+    with st.sidebar:
+        if st.button("📚 Ver Explicação do Projeto"):
+            st.session_state.mostrar_ferramenta = False
+            st.rerun()
     
     # Sidebar para configurações
     with st.sidebar:
@@ -613,7 +755,7 @@ def main():
         if gnews_key_input:
             st.session_state.gnews_api_key = gnews_key_input
 
-        # NewsAPI Key (voltando este bloco)
+        # NewsAPI Key
         if 'news_api_key' not in st.session_state:
             st.session_state.news_api_key = ""
         newsapi_key_input = st.text_input(
