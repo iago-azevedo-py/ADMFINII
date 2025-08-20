@@ -1060,7 +1060,7 @@ def main():
                 }
                 
                 df_dfc_estruturado = pd.DataFrame(list(dfc_estruturada.items()), columns=['Item', 'Valor'])
-                st.dataframe(df_dfc_estruturado, use_container_width=True, hide_index=True)
+                st.dataframe(df_dfc_estruturada, use_container_width=True, hide_index=True)
                 
             else:
                 st.info("Fluxo de caixa não disponível para esta empresa.")
@@ -1146,27 +1146,38 @@ def main():
                     with st.chat_message("assistant"):
                         st.markdown(st.session_state.ultima_resposta)
                 
-                if not st.session_state.get('google_api_key'):
-                    st.error("🔑 Configure sua Google API Key na barra lateral para usar o chat.")
-                    return
-
-                if prompt := st.chat_input("Digite sua pergunta sobre análise de ações..."):
-                    st.session_state.ultima_pergunta = prompt
+                # CORREÇÃO: Verificar chave do Google corretamente
+                if not get_google_api_key():
+                    st.error("🔑 Google API Key não configurada nos secrets do Streamlit Cloud.")
+                    st.info("""
+                    **Configure sua Google API Key:**
                     
-                    with st.chat_message("user"):
-                        st.markdown(prompt)
-                    
-                    with st.chat_message("assistant"):
-                        with st.spinner("Analisando..."):
-                            try:
-                                dados_contexto = st.session_state.get('dados_analise', {})
-                                noticias = st.session_state.get('noticias_contexto', [])
-                                resposta = asyncio.run(chat_consultor_acoes(prompt, dados_contexto, noticias, session_service))
-                                st.markdown(resposta)
-                                st.session_state.ultima_resposta = resposta
-                            except Exception as e:
-                                st.error(f"Erro no chat: {str(e)}")
-                                st.session_state.ultima_resposta = "Erro ao processar sua pergunta. Verifique sua API key."
+                    1. Vá em **Settings → Secrets** no painel do Streamlit Cloud
+                    2. Adicione/verifique:
+                    ```
+                    GOOGLE_API_KEY = "sua_chave_google_real"
+                    ```
+                    3. Salve e o app reiniciará automaticamente
+                    """)
+                else:
+                    # Chat funcional
+                    if prompt := st.chat_input("Digite sua pergunta sobre análise de ações..."):
+                        st.session_state.ultima_pergunta = prompt
+                        
+                        with st.chat_message("user"):
+                            st.markdown(prompt)
+                        
+                        with st.chat_message("assistant"):
+                            with st.spinner("Analisando..."):
+                                try:
+                                    dados_contexto = st.session_state.get('dados_analise', {})
+                                    noticias = st.session_state.get('noticias_contexto', [])
+                                    resposta = asyncio.run(chat_consultor_acoes(prompt, dados_contexto, noticias, session_service))
+                                    st.markdown(resposta)
+                                    st.session_state.ultima_resposta = resposta
+                                except Exception as e:
+                                    st.error(f"Erro no chat: {str(e)}")
+                                    st.session_state.ultima_resposta = f"Erro ao processar sua pergunta: {str(e)}"
                 
                 if st.button("🔄 Nova Consulta"):
                     st.session_state.ultima_pergunta = ""
