@@ -915,7 +915,7 @@ def main():
             else:
                 st.info("Balanço patrimonial não disponível para esta empresa.")
 
-        # TAB 5: FLUXO DE CAIXA
+        # TAB 5: FLUXO DE CAIXA - CORREÇÃO COMPLETA
         with tab5:
             st.subheader("💸 Demonstrativo de Fluxo de Caixa (DFC)")
             st.markdown("**Fonte:** Financial Modeling Prep (FMP)")
@@ -1065,31 +1065,31 @@ def main():
             else:
                 st.info("Fluxo de caixa não disponível para esta empresa.")
 
-            # TAB 6: PERFIL DA EMPRESA
-            with tab6:
-                st.subheader("ℹ️ Perfil da Empresa")
-                st.markdown("**Fonte:** Financial Modeling Prep (FMP)")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.markdown(f"**Nome:** {profile.get('companyName', 'N/A')}")
-                    st.markdown(f"**Ticker:** {profile.get('symbol', 'N/A')}")
-                    st.markdown(f"**Setor:** {profile.get('sector', 'N/A')}")
-                    st.markdown(f"**Indústria:** {profile.get('industry', 'N/A')}")
-                    st.markdown(f"**País:** {profile.get('country', 'N/A')}")
-                    st.markdown(f"**Website:** {profile.get('website', 'N/A')}")
-                
-                with col2:
-                    st.markdown(f"**Cap. de Mercado:** {formatar_numero(profile.get('mktCap', 0), '${:,}')}")
-                    st.markdown(f"**Preço:** {formatar_numero(profile.get('price', 0), '${:.2f}')}")
-                    st.markdown(f"**P/L:** {profile.get('pe', 'N/A')}")
-                    st.markdown(f"**Beta:** {profile.get('beta', 'N/A')}")
-                    st.markdown(f"**Dividend Yield:** {profile.get('lastDiv', 'N/A')}")
-                    st.markdown(f"**Funcionários:** {formatar_numero(profile.get('fullTimeEmployees', 0))}")
-                
-                st.markdown("**Descrição:**")
-                st.markdown(profile.get('description', 'Descrição não disponível.'))
+        # TAB 6: PERFIL DA EMPRESA
+        with tab6:
+            st.subheader("ℹ️ Perfil da Empresa")
+            st.markdown("**Fonte:** Financial Modeling Prep (FMP)")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"**Nome:** {profile.get('companyName', 'N/A')}")
+                st.markdown(f"**Ticker:** {profile.get('symbol', 'N/A')}")
+                st.markdown(f"**Setor:** {profile.get('sector', 'N/A')}")
+                st.markdown(f"**Indústria:** {profile.get('industry', 'N/A')}")
+                st.markdown(f"**País:** {profile.get('country', 'N/A')}")
+                st.markdown(f"**Website:** {profile.get('website', 'N/A')}")
+            
+            with col2:
+                st.markdown(f"**Cap. de Mercado:** {formatar_numero(profile.get('mktCap', 0), '${:,}')}")
+                st.markdown(f"**Preço:** {formatar_numero(profile.get('price', 0), '${:.2f}')}")
+                st.markdown(f"**P/L:** {profile.get('pe', 'N/A')}")
+                st.markdown(f"**Beta:** {profile.get('beta', 'N/A')}")
+                st.markdown(f"**Dividend Yield:** {profile.get('lastDiv', 'N/A')}")
+                st.markdown(f"**Funcionários:** {formatar_numero(profile.get('fullTimeEmployees', 0))}")
+            
+            st.markdown("**Descrição:**")
+            st.markdown(profile.get('description', 'Descrição não disponível.'))
 
             # TAB 7: NOTÍCIAS & ANÁLISE
             with tab7:
