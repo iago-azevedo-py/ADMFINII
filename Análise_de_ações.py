@@ -1059,8 +1059,8 @@ def main():
                     "FLUXO DE CAIXA LIVRE": formatar_moeda_usd(fc_livre)
                 }
                 
-                df_dfc_estruturado = pd.DataFrame(list(dfc_estruturada.items()), columns=['Item', 'Valor'])
-                st.dataframe(df_dfc_estruturada, use_container_width=True, hide_index=True)
+                df_dfc_estruturada = pd.DataFrame(list(dfc_estruturada.items()), columns=['Item', 'Valor'])
+                st.dataframe(df_dfc_estruturada, use_container_width=True, hide_index=True)  # LINHA CORRIGIDA
                 
             else:
                 st.info("Fluxo de caixa não disponível para esta empresa.")
