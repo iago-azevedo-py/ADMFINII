@@ -226,19 +226,57 @@ def fmp_get(endpoint, symbol):
 
 def obter_dados_fmp_completos(ticker_symbol):
     """Obtém dados completos do FMP incluindo histórico de 3 anos"""
-    income = fmp_get("income-statement", ticker_symbol)
-    balance = fmp_get("balance-sheet-statement", ticker_symbol)
-    cashflow = fmp_get("cash-flow-statement", ticker_symbol)
+    
+    # DEBUG: Verificar se temos chave FMP
+    fmp_key = get_fmp_api_key()
+    st.write(f"🔍 DEBUG: FMP Key disponível: {bool(fmp_key)}")
+    
+    if not fmp_key:
+        st.error("❌ Chave FMP não configurada!")
+        return {}
+    
+    # Buscar dados individuais com debug
+    st.write(f"🔍 DEBUG: Buscando dados para {ticker_symbol}")
+    
     profile = fmp_get("profile", ticker_symbol)
+    st.write(f"🔍 DEBUG Profile: {profile}")
+    
+    income = fmp_get("income-statement", ticker_symbol)
+    st.write(f"🔍 DEBUG Income (primeiros 100 chars): {str(income)[:100]}...")
+    
+    balance = fmp_get("balance-sheet-statement", ticker_symbol)
+    st.write(f"🔍 DEBUG Balance disponível: {bool(balance)}")
+    
+    cashflow = fmp_get("cash-flow-statement", ticker_symbol)
+    st.write(f"🔍 DEBUG Cashflow disponível: {bool(cashflow)}")
+    
     historical = fmp_get("historical-price-full", ticker_symbol)
+    st.write(f"🔍 DEBUG Historical disponível: {bool(historical)}")
+    
     ratios = fmp_get("ratios", ticker_symbol)
     key_metrics = fmp_get("key-metrics", ticker_symbol)
+    
+    # Processar profile
+    profile_processado = {}
+    if profile:
+        if isinstance(profile, list) and len(profile) > 0:
+            profile_processado = profile[0]
+            st.write(f"✅ DEBUG: Profile processado como lista")
+        elif isinstance(profile, dict):
+            profile_processado = profile
+            st.write(f"✅ DEBUG: Profile processado como dict")
+        else:
+            st.write(f"❌ DEBUG: Profile em formato inesperado: {type(profile)}")
+    else:
+        st.write(f"❌ DEBUG: Profile vazio ou None")
+    
+    st.write(f"🔍 DEBUG Profile final: {profile_processado}")
     
     return {
         "income": income,
         "balance": balance,
         "cashflow": cashflow,
-        "profile": profile[0] if profile and isinstance(profile, list) and len(profile) > 0 else {},
+        "profile": profile_processado,
         "historical": historical,
         "ratios": ratios,
         "key_metrics": key_metrics
@@ -1196,14 +1234,25 @@ def main():
                     
                     # Verificar se profile tem dados válidos
                     if not profile:
-                        st.error("❌ Profile vazio - verifique o ticker ou tente novamente.")
+                        st.error("❌ Profile vazio - verifique sua chave FMP ou o ticker.")
+                        st.write("🔍 DEBUG: Dados FMP retornados:", dados_fmp)
+                        st.write("🔍 DEBUG: Chave FMP configurada:", bool(get_fmp_api_key()))
                         return
                         
-                    if not (profile.get("companyName") or profile.get("name") or profile.get("symbol")):
-                        st.error("❌ Ticker não encontrado. Verifique se está correto.")
-                        return
+                    # Verificação mais flexível
+                    nome_empresa = (
+                        profile.get("companyName") or 
+                        profile.get("name") or 
+                        profile.get("symbol") or
+                        ticker_input
+                    )
                     
-                    # Armazenar dados no session_state
+                    if not nome_empresa or nome_empresa == ticker_input:
+                        st.warning("⚠️ Dados limitados encontrados. Pode ser um ticker inválido ou problema na API.")
+                        st.write("🔍 DEBUG: Profile encontrado:", profile)
+                        # Continuar mesmo assim para debug
+                    
+                    # Sempre armazenar dados (mesmo se limitados)
                     st.session_state.dados_analise = {
                         'ticker': ticker_input,
                         'profile': profile,
@@ -1212,8 +1261,7 @@ def main():
                     st.session_state.analise_realizada = True
                     st.session_state.ticker_analise = ticker_input
 
-                    company_name = profile.get('companyName') or profile.get('name') or ticker_input
-                    st.success(f"✅ Dados coletados para {company_name}")
+                    st.success(f"✅ Dados coletados para {nome_empresa}")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro durante a análise: {str(e)}")
