@@ -209,16 +209,31 @@ def fmp_get(endpoint, symbol):
     
     url = f"{FMP_BASE_URL}/{endpoint}/{symbol}?apikey={fmp_api_key.strip()}"
     
+    # DEBUG: Mostrar URL (sem chave)
+    url_debug = f"{FMP_BASE_URL}/{endpoint}/{symbol}?apikey=***"
+    st.write(f"🔍 DEBUG URL: {url_debug}")
+    
     try:
         r = requests.get(url, timeout=15)
         
+        st.write(f"🔍 DEBUG Status Code: {r.status_code}")
+        
         if r.status_code == 200:
             data = r.json()
+            st.write(f"🔍 DEBUG Response length: {len(str(data)) if data else 0} chars")
             return data if data else None
         elif r.status_code == 401:
             st.error("❌ Chave FMP inválida ou expirada")
+            st.write(f"🔍 DEBUG Response: {r.text[:200]}")
         elif r.status_code == 429:
             st.error("❌ Limite de requisições FMP atingido")
+            st.write(f"🔍 DEBUG Response: {r.text[:200]}")
+        elif r.status_code == 403:
+            st.error("❌ Acesso negado - verifique sua chave FMP ou plano")
+            st.write(f"🔍 DEBUG Response: {r.text[:200]}")
+        else:
+            st.error(f"❌ Erro FMP {r.status_code}")
+            st.write(f"🔍 DEBUG Response: {r.text[:200]}")
         return None
     except Exception as e:
         st.error(f"❌ Erro de conexão com FMP: {str(e)[:50]}")
@@ -230,29 +245,30 @@ def obter_dados_fmp_completos(ticker_symbol):
     # DEBUG: Verificar se temos chave FMP
     fmp_key = get_fmp_api_key()
     st.write(f"🔍 DEBUG: FMP Key disponível: {bool(fmp_key)}")
+    st.write(f"🔍 DEBUG: FMP Key length: {len(fmp_key) if fmp_key else 0}")
     
     if not fmp_key:
         st.error("❌ Chave FMP não configurada!")
-        return {}
+        return obter_dados_yahoo_fallback(ticker_symbol)
     
     # Buscar dados individuais com debug
     st.write(f"🔍 DEBUG: Buscando dados para {ticker_symbol}")
     
+    # Tentar primeiro profile para validar ticker
+    st.write("⏳ Testando profile...")
     profile = fmp_get("profile", ticker_symbol)
-    st.write(f"🔍 DEBUG Profile: {profile}")
     
+    if not profile:
+        st.warning(f"⚠️ Ticker {ticker_symbol} não encontrado no FMP. Tentando Yahoo Finance...")
+        return obter_dados_yahoo_fallback(ticker_symbol)
+    
+    st.write(f"✅ Profile encontrado, buscando outros dados...")
+    
+    # Buscar outros dados apenas se profile funcionar
     income = fmp_get("income-statement", ticker_symbol)
-    st.write(f"🔍 DEBUG Income (primeiros 100 chars): {str(income)[:100]}...")
-    
     balance = fmp_get("balance-sheet-statement", ticker_symbol)
-    st.write(f"🔍 DEBUG Balance disponível: {bool(balance)}")
-    
     cashflow = fmp_get("cash-flow-statement", ticker_symbol)
-    st.write(f"🔍 DEBUG Cashflow disponível: {bool(cashflow)}")
-    
     historical = fmp_get("historical-price-full", ticker_symbol)
-    st.write(f"🔍 DEBUG Historical disponível: {bool(historical)}")
-    
     ratios = fmp_get("ratios", ticker_symbol)
     key_metrics = fmp_get("key-metrics", ticker_symbol)
     
@@ -267,10 +283,6 @@ def obter_dados_fmp_completos(ticker_symbol):
             st.write(f"✅ DEBUG: Profile processado como dict")
         else:
             st.write(f"❌ DEBUG: Profile em formato inesperado: {type(profile)}")
-    else:
-        st.write(f"❌ DEBUG: Profile vazio ou None")
-    
-    st.write(f"🔍 DEBUG Profile final: {profile_processado}")
     
     return {
         "income": income,
@@ -279,8 +291,67 @@ def obter_dados_fmp_completos(ticker_symbol):
         "profile": profile_processado,
         "historical": historical,
         "ratios": ratios,
-        "key_metrics": key_metrics
+        "key_metrics": key_metrics,
+        "fonte": "FMP"
     }
+
+def obter_dados_yahoo_fallback(ticker_symbol):
+    """Fallback usando Yahoo Finance quando FMP falha"""
+    st.info("📊 Usando Yahoo Finance como fonte alternativa...")
+    
+    try:
+        empresa = yf.Ticker(ticker_symbol)
+        info = empresa.info
+        hist = empresa.history(period="3y")
+        
+        # Criar structure similar ao FMP
+        profile_yahoo = {
+            "symbol": ticker_symbol,
+            "companyName": info.get("longName", ticker_symbol),
+            "sector": info.get("sector", "N/A"),
+            "industry": info.get("industry", "N/A"),
+            "country": info.get("country", "N/A"),
+            "website": info.get("website", "N/A"),
+            "description": info.get("longBusinessSummary", "N/A"),
+            "mktCap": info.get("marketCap", 0),
+            "price": info.get("currentPrice", 0),
+            "pe": info.get("trailingPE", 0),
+            "beta": info.get("beta", 0),
+            "lastDiv": info.get("dividendYield", 0),
+            "fullTimeEmployees": info.get("fullTimeEmployees", 0)
+        }
+        
+        # Converter histórico para formato similar ao FMP
+        historical_yahoo = {
+            "historical": []
+        }
+        
+        if not hist.empty:
+            for date, row in hist.iterrows():
+                historical_yahoo["historical"].append({
+                    "date": date.strftime("%Y-%m-%d"),
+                    "open": row["Open"],
+                    "high": row["High"],
+                    "low": row["Low"],
+                    "close": row["Close"],
+                    "volume": int(row["Volume"]),
+                    "changePercent": 0  # Yahoo não tem esse campo diretamente
+                })
+        
+        return {
+            "income": None,
+            "balance": None,
+            "cashflow": None,
+            "profile": profile_yahoo,
+            "historical": historical_yahoo,
+            "ratios": None,
+            "key_metrics": None,
+            "fonte": "Yahoo Finance"
+        }
+        
+    except Exception as e:
+        st.error(f"❌ Erro também no Yahoo Finance: {str(e)}")
+        return {}
 
 def calcular_indicadores_fmp(dados_fmp):
     """Calcula os 10 principais indicadores financeiros usando dados FMP"""
@@ -1234,10 +1305,16 @@ def main():
                     
                     # Verificar se profile tem dados válidos
                     if not profile:
-                        st.error("❌ Profile vazio - verifique sua chave FMP ou o ticker.")
+                        st.error("❌ Profile vazio - dados não encontrados")
                         st.write("🔍 DEBUG: Dados FMP retornados:", dados_fmp)
-                        st.write("🔍 DEBUG: Chave FMP configurada:", bool(get_fmp_api_key()))
-                        return
+                        st.write("🔍 DEBUG: Fonte dos dados:", dados_fmp.get("fonte", "Desconhecida"))
+                        
+                        # Se FMP falhou, dados_fmp já deve ter fallback do Yahoo
+                        if dados_fmp.get("fonte") == "Yahoo Finance":
+                            st.info("✅ Usando dados do Yahoo Finance")
+                        else:
+                            st.error("❌ Falha em ambas as fontes de dados")
+                            return
                         
                     # Verificação mais flexível
                     nome_empresa = (
@@ -1246,11 +1323,6 @@ def main():
                         profile.get("symbol") or
                         ticker_input
                     )
-                    
-                    if not nome_empresa or nome_empresa == ticker_input:
-                        st.warning("⚠️ Dados limitados encontrados. Pode ser um ticker inválido ou problema na API.")
-                        st.write("🔍 DEBUG: Profile encontrado:", profile)
-                        # Continuar mesmo assim para debug
                     
                     # Sempre armazenar dados (mesmo se limitados)
                     st.session_state.dados_analise = {
@@ -1261,7 +1333,8 @@ def main():
                     st.session_state.analise_realizada = True
                     st.session_state.ticker_analise = ticker_input
 
-                    st.success(f"✅ Dados coletados para {nome_empresa}")
+                    fonte = dados_fmp.get("fonte", "FMP")
+                    st.success(f"✅ Dados coletados para {nome_empresa} (Fonte: {fonte})")
                     st.rerun()
                 except Exception as e:
                     st.error(f"Erro durante a análise: {str(e)}")
